@@ -1,0 +1,40 @@
+#cloud-config
+
+package_update: true
+
+packages:
+  - docker.io
+  - git
+
+groups:
+  - docker
+
+users:
+  - default
+  - name: aluno
+    shell: /bin/bash
+    groups: [sudo, docker]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+write_files:
+  - path: /tmp/bem-vindo.txt
+    permissions: '0644'
+    content: |
+      Bem-vindo ao laboratorio de Cloud-init!
+
+      - Usuario: aluno (sudo sem senha, grupo docker)
+      - Grafana rodando em http://<IP-DA-VM>:3000
+      - Login padrao do Grafana: admin / admin
+      - Comandos uteis: docker ps | git --version
+
+runcmd:
+  - systemctl enable --now docker
+
+  - install -d -o aluno -g aluno /home/aluno
+
+  - mv /tmp/bem-vindo.txt /home/aluno/bem-vindo.txt
+  - chown aluno:aluno /home/aluno/bem-vindo.txt
+
+  - chown -R aluno:aluno /home/aluno
+
+  - docker run -d --name grafana --restart unless-stopped -p 3000:3000 grafana/grafana:latest

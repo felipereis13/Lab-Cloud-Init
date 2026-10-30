@@ -1,0 +1,56 @@
+name: Validar YAML Cloud-init
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar ferramentas
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cloud-init yamllint
+
+      - name: Normalizar EOL, trailing spaces e newline final
+        run: |
+          shopt -s nullglob
+          files=(missao*.yaml)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::Nenhum arquivo missao*.yaml encontrado"
+            exit 1
+          fi
+          for f in "${files[@]}"; do
+            sed -i 's/\r$//' "$f"
+            sed -i 's/[[:space:]]\+$//' "$f"
+            [ -n "$(tail -c1 "$f")" ] && printf '\n' >> "$f"
+            echo "normalizado: $f"
+          done
+
+      - name: Verificar cabecalho #cloud-config
+        run: |
+          shopt -s nullglob
+          files=(missao*.yaml)
+          for f in "${files[@]}"; do
+            head -n1 "$f" | grep -qx '#cloud-config' \
+              || { echo "::error file=$f::Primeira linha deve ser #cloud-config"; exit 1; }
+            echo "OK cabecalho: $f"
+          done
+
+      - name: Validar sintaxe YAML (yamllint)
+        run: |
+          shopt -s nullglob
+          files=(missao*.yaml)
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" "${files[@]}"
+
+      - name: Validar contra o schema do cloud-init
+        run: |
+          shopt -s nullglob
+          for f in missao*.yaml; do
+            echo "==> $f"
+            cloud-init schema --config-file "$f"
+          done

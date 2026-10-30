@@ -1,0 +1,10 @@
+#cloud-config
+
+package_update: true
+
+packages:
+  - docker.io
+
+runcmd:
+  - systemctl enable --now docker
+  - docker run -d --name hello --restart unless-stopped -p 8080:80 nginxdemos/hello

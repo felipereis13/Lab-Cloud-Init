@@ -1,0 +1,28 @@
+#cloud-config
+
+package_update: true
+
+packages:
+  - nginx
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: root:root
+    permissions: '0644'
+    content: |
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Laboratorio Cloud-init</title>
+      </head>
+      <body>
+        <h1>Servidor configurado com sucesso!</h1>
+        <p>Esta pagina foi criada automaticamente pelo Cloud-init.</p>
+        <p>Missao 1 - Multipass e Nginx.</p>
+      </body>
+      </html>
+
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
